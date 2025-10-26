@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Supervisor Dashboard</title>
+  <style>
+    body { font-family: Arial; padding: 20px; background: #f8f9fa; }
+    h1 { color: #333; }
+    .card { background: #fff; padding: 15px; margin-bottom: 10px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1);}
+    button { background: #007bff; color: white; border: none; padding: 6px 10px; border-radius: 4px; cursor: pointer; }
+    input, textarea { width: 100%; margin-top: 5px; margin-bottom: 10px; padding: 5px; }
+  </style>
+</head>
+<body>
+  <h1>Supervisor Dashboard</h1>
+  <button onclick="loadRequests()">View Pending Requests</button>
+  <button onclick="loadKB()">View Learned Answers</button>
+  <div id="output"></div>
+
+  <script>
+    async function loadRequests() {
+      const res = await fetch('/api/requests');
+      const data = await res.json();
+      let html = "<h2>Pending Requests</h2>";
+      data.forEach(r => {
+        html += `<div class='card'>
+          <b>Customer:</b> ${r.customerName}<br>
+          <b>Question:</b> ${r.question}<br>
+          <b>Status:</b> ${r.status}<br>
+          ${
+            r.status === "pending"
+              ? `<textarea id='ans_${r.id}' placeholder='Type answer'></textarea>
+                 <button onclick='submitAnswer("${r.id}")'>Submit</button>`
+              : `<b>Answer:</b> ${r.answer}`
+          }
+        </div>`;
+      });
+      document.getElementById('output').innerHTML = html;
+    }
+
+    async function submitAnswer(id) {
+      const ans = document.getElementById('ans_' + id).value;
+      await fetch('/api/requests/' + id + '/resolve', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ answer: ans })
+      });
+      alert('Answer saved!');
+      loadRequests();
+    }
+
+    async function loadKB() {
+      const res = await fetch('/api/kb');
+      const data = await res.json();
+      let html = "<h2>Learned Answers</h2>";
+      data.forEach(k => {
+        html += `<div class='card'><b>Q:</b> ${k.question}<br><b>A:</b> ${k.answer}</div>`;
+      });
+      document.getElementById('output').innerHTML = html;
+    }
+  </script>
+</body>
+</html>
